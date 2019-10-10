@@ -1,0 +1,76 @@
+FUNCTION z_ab_create_lez_bp.
+*"----------------------------------------------------------------------
+*"*"Local Interface:
+*"  IMPORTING
+*"     VALUE(IS_BP_DATA) TYPE  ZDIGI_MTF_LEZ_BP_S
+*"     VALUE(IS_WAIT_PROCESS) TYPE  FLAG OPTIONAL
+*"  EXPORTING
+*"     VALUE(ES_BP_NUMBER) TYPE  BU_PARTNER
+*"     VALUE(ES_INIT_MESSAGE) TYPE  CHAR255
+*"  TABLES
+*"      ET_RETURN STRUCTURE  BAPIRET2
+*"----------------------------------------------------------------------
+*"*"Local Interface:
+*"  IMPORTING
+*"     VALUE(IS_BP_DATA) TYPE  ZDIGI_MTF_LEZ_BP_S
+*"     VALUE(IS_WAIT_PROCESS) TYPE  FLAG OPTIONAL
+*"  EXPORTING
+*"     VALUE(ES_BP_NUMBER) TYPE  BU_PARTNER
+*"     VALUE(ES_INIT_MESSAGE) TYPE  CHAR255
+*"  TABLES
+*"      ET_RETURN STRUCTURE  BAPIRET2
+*---------------------------------------------------------------------*
+* Title: Mobile LEZ - BP Creation
+*
+* Author: AGL
+* Date: 10.10.2019
+*---------------------------------------------------------------------*
+* Change History:
+*
+* Date        Author       Transport/Description
+* 10.10.2019  AGL          Initial development
+*---------------------------------------------------------------------*
+
+  IF is_bp_data IS INITIAL.
+    mac_mes 'E' et_return '002' 'IS_BP_DATA' space space space space.
+*    RAISE error.
+    RETURN.
+  ENDIF.
+
+*      g_mes2 = is_derogation_data-euronorm_corr.
+*      mac_mes 'E' et_return '003' 'EURONORM_CORR' g_mes2 space space space.
+
+  IF is_bp_data-identificationcategory IS INITIAL.
+    mac_mes 'E' et_return '002' 'IS_BP_DATA-IDENTIFICATIONCATEGORY' space space space space.
+*    RAISE error.
+    RETURN.
+  ENDIF.
+
+  IF is_bp_data-identificationnumber IS INITIAL.
+    mac_mes 'E' et_return '002' 'IS_BP_DATA-IDENTIFICATIONNUMBER' space space space space.
+*    RAISE error.
+    RETURN.
+  ENDIF.
+
+  REFRESH : et_return.
+  CLEAR : es_bp_number, es_init_message, g_identifier, g_bp.
+
+  g_identifier = is_bp_data-identificationcategory+2(4).
+
+  SELECT sap_person_id INTO g_bp
+    FROM zbp_identifier
+     WHERE identifier = g_identifier
+       AND value      = is_bp_data-identificationnumber.
+  ENDSELECT.
+  IF sy-subrc EQ 0. "Synchronise
+
+    es_bp_number = g_bp.
+    PERFORM synchronize_bp.
+
+  ELSE.
+
+    PERFORM ask_zbp_from_stg.
+
+  ENDIF.
+
+ENDFUNCTION.
